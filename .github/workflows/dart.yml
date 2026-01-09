@@ -35,17 +35,6 @@ jobs:
       - name: Analyze project source
         run: dart analyze
 
-      # 🔵 Build Android APK
-      - name: Build Android APK
-        run: flutter build apk --release --split-per-abi
-
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
-      # 🔵 Release to GitHub
-      - name: Push to GitHub Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: build/app/outputs/apk/release/*
-          tag: v1.0.${{ github.run_number }}
-          token: ${{ secrets.TOKEN }}
