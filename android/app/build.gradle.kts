@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.attendance_by_qrcode"
-        minSdk = 24
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

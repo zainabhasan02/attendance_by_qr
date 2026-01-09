@@ -1,7 +1,12 @@
+import 'package:attendance_by_qrcode/views/generate_qr/generate_qr_screen.dart';
+import 'package:attendance_by_qrcode/views/scan_qr/scan_qr_screen.dart';
+import 'package:attendance_by_qrcode/views/test_qr_screen2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'views/test_qr_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,13 +17,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: QRScanScreen(),
+    return MaterialApp(home: HomeScreen());
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QR Location App')),
+      body: Center(
+        child: ElevatedButton(
+          child: const Text('Scan QR'),
+          onPressed: () {
+            /*Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ScanQrScreen()),
+            );*/
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TestQrScreen()),
+            );
+          },
+        ),
+      ),
     );
   }
 }
 
+/// This code is for other
 class QRScanScreen extends StatefulWidget {
   const QRScanScreen({super.key});
 

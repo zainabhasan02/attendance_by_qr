@@ -14,7 +14,8 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
   bool scanned = false;
   final FlutterTts flutterTts = FlutterTts();
 
-  static const double allowedRadius = 30.0; // Fixed 30 meters
+  static const double allowedDistance = 5.0; // meters
+  static const double maxAccuracy = 15.0; // meters
 
   @override
   void initState() {
@@ -27,12 +28,10 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
     await flutterTts.setSpeechRate(0.5);
   }
 
-  Future<Position> _getBestLocation() async {
-    // ... (same as previous code - permission checks, multiple attempts, etc.)
-    // मैंने previous वाला _getBestLocation() same रखा है accuracy के लिए
-
-    bool enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) throw Exception("Location services are disabled.");
+  Future<Position?> _getAccurateLocation() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception("Location services disabled");
+    }
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -42,84 +41,91 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
       throw Exception("Location permission denied forever.");
     }
 
-    LocationSettings locationSettings;
-    locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
-    );
-    /*if (Platform.isAndroid) {
-      locationSettings = AndroidSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0,
-        intervalDuration: const Duration(seconds: 2),
-      );
-    } else if (Platform.isIOS) {
-      locationSettings = AppleSettings(
-        accuracy: LocationAccuracy.best,
-        activityType: ActivityType.other,
-      );
-    } else {
-      locationSettings = const LocationSettings(accuracy: LocationAccuracy.bestForNavigation);
-    }*/
-
     Position? bestPosition;
     double bestAccuracy = double.infinity;
-
     for (int i = 0; i < 5; i++) {
-      try {
-        final Position position = await Geolocator.getCurrentPosition(
-          locationSettings: locationSettings,
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
           timeLimit: const Duration(seconds: 15),
-        );
+        ),
+      );
 
-        if (position.isMocked) {
-          throw Exception("Fake GPS detected!");
-        }
+      debugPrint("Attempt ${i + 1}: Accuracy ${pos.accuracy} m");
 
-        debugPrint("Attempt ${i + 1}: Accuracy ${position.accuracy}m");
-
-        if (position.accuracy < bestAccuracy) {
-          bestAccuracy = position.accuracy;
-          bestPosition = position;
-        }
-
-        if (position.accuracy <= 20.0) {
-          return position;
-        }
-      } catch (e) {
-        debugPrint("Attempt ${i + 1} failed: $e");
+      if (pos.isMocked) {
+        throw Exception("Fake GPS detected");
       }
 
-      if (i < 4) await Future.delayed(const Duration(seconds: 3));
+      if (pos.accuracy < bestAccuracy) {
+        bestAccuracy = pos.accuracy;
+        bestPosition = pos;
+      }
+
+      if (pos.accuracy <= maxAccuracy) {
+        return pos;
+      }
+
+      await Future.delayed(const Duration(seconds: 2));
     }
 
-    if (bestPosition == null) {
-      throw Exception("Failed to get reliable location.");
+    if (bestAccuracy > maxAccuracy) {
+      throw Exception("Location not accurate enough");
     }
 
-    return bestPosition;
+    return bestPosition!;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(title: const Text("Scan QR Location")),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            scanned = false;
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => _scannerView()),
-            );
-          },
-          child: const Text("Scan QR"),
-        ),
+      body: Column(
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              shape: BeveledRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(15)),
+              ),
+              backgroundColor: Colors.amber.shade300,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () {
+              scanned = false;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => _scannerView()),
+              );
+            },
+            child: const Text("Gemini"),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              shape: BeveledRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(15)),
+              ),
+              backgroundColor: Colors.amber.shade300,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () {
+              scanned = false;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => _scannerView()),
+              );
+            },
+            child: const Text("Scan QR"),
+          ),
+        ],
       ),
     );
   }
 
   Widget _scannerView() {
     return Scaffold(
+      backgroundColor: Colors.blueGrey.shade500,
       appBar: AppBar(title: const Text("Scanning QR Code...")),
       body: MobileScanner(
         onDetect: (capture) async {
@@ -128,7 +134,7 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
 
           final raw = capture.barcodes.first.rawValue;
           if (raw == null || !raw.contains(",")) {
-            _showResult("Invalid QR Code", "N/A", "N/A", 0, false);
+            _showResult("Invalid QR Code", 0, false);
             return;
           }
 
@@ -137,55 +143,41 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
             final double qrLat = double.parse(parts[0].trim());
             final double qrLng = double.parse(parts[1].trim());
 
-            final userPos = await _getBestLocation();
+            final userPos = await _getAccurateLocation();
 
             final distance = Geolocator.distanceBetween(
-              userPos.latitude,
+              userPos!.latitude,
               userPos.longitude,
               qrLat,
               qrLng,
             );
 
-            final effectiveRadius = allowedRadius + userPos.accuracy;
-
             debugPrint("QR Location: $qrLat, $qrLng");
             debugPrint(
               "Your Location: ${userPos.latitude}, ${userPos.longitude}",
             );
+            debugPrint("Accuracy: ${userPos.accuracy} m");
             debugPrint("Distance: ${distance.toStringAsFixed(2)} m");
-            debugPrint(
-              "Effective Radius: ${effectiveRadius.toStringAsFixed(2)} m",
-            );
 
-            final bool isPresent = distance <= effectiveRadius;
+            final bool isPresent =
+                userPos.accuracy <= maxAccuracy && distance <= allowedDistance;
 
-            String message =
-                isPresent ? "You are present!" : "You are too far away!";
+            final message = isPresent ? "Hello" : "Too far away";
             await flutterTts.speak(message);
 
-            _showResult(
-              message,
-              "${qrLat.toStringAsFixed(6)}, ${qrLng.toStringAsFixed(6)}",
-              "${userPos.latitude.toStringAsFixed(6)}, ${userPos.longitude.toStringAsFixed(6)}",
-              distance,
-              isPresent,
-            );
+            _showResult(message, distance, isPresent);
           } catch (e) {
             debugPrint("Error: $e");
-            _showResult("Error: Unable to process", "N/A", "N/A", 0, false);
+            await flutterTts.speak("Error: $e");
+            _showResult("Error", -1, false);
           }
         },
       ),
     );
   }
 
-  void _showResult(
-    String message,
-    String qrLocation,
-    String userLocation,
-    double distance,
-    bool success,
-  ) {
+  // ---------------- RESULT ----------------
+  void _showResult(String message, double distance, bool success) {
     if (!mounted) return;
 
     showModalBottomSheet(
@@ -214,24 +206,20 @@ class _QrScanSpeakScreenState extends State<QrScanSpeakScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  "QR Location:\n$qrLocation",
-                  style: const TextStyle(fontSize: 16),
-                ),
                 const SizedBox(height: 10),
-                Text(
-                  "Your Location:\n$userLocation",
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Distance: ${distance.toStringAsFixed(1)} meters",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                if (distance >= 0)
+                  Text(
+                    "Distance: ${distance.toStringAsFixed(1)} meters",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                else
+                  const Text(
+                    "Distance unavailable (low GPS accuracy)",
+                    style: TextStyle(fontSize: 16),
                   ),
-                ),
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () {
