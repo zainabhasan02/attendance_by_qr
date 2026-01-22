@@ -110,49 +110,49 @@ class _GenerateQrTabState extends State<GenerateQrTab> {
               child: _isLoading
                   ? const CircularProgressIndicator()
                   : _qrData != null
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RepaintBoundary(
-                              key: _globalKey,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: QrImageView(
-                                  data: _qrData!,
-                                  version: QrVersions.auto,
-                                  size: 240.0,
-                                  backgroundColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              "Lat/Lng: $_qrData",
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 20),
-                            TextButton.icon(
-                              onPressed: _saveToGallery,
-                              icon: const Icon(Icons.download),
-                              label: const Text("Save to Gallery"),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.blueAccent,
-                              ),
-                            )
-                          ],
-                        )
+                      ? SingleChildScrollView(child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RepaintBoundary(
+                    key: _globalKey,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: QrImageView(
+                        data: _qrData!,
+                        version: QrVersions.auto,
+                        size: 240.0,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Lat/Lng: $_qrData",
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton.icon(
+                    onPressed: _saveToGallery,
+                    icon: const Icon(Icons.download),
+                    label: const Text("Save to Gallery"),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.blueAccent,
+                    ),
+                  )
+                ],
+              ),)
                       : _errorMessage != null
                           ? Text(
                               _errorMessage!,

@@ -51,8 +51,9 @@ class _ScanQrTabState extends State<ScanQrTab> {
     });
 
     try {
-      final BarcodeCapture? capture =
-          await _controller.analyzeImage(image.path);
+      final BarcodeCapture? capture = await _controller.analyzeImage(
+        image.path,
+      );
       if (capture != null && capture.barcodes.isNotEmpty) {
         final String? rawValue = capture.barcodes.first.rawValue;
         if (rawValue != null) {
@@ -62,11 +63,15 @@ class _ScanQrTabState extends State<ScanQrTab> {
         }
       } else {
         _showStatusPopup(
-            isSuccess: false, message: "No QR code found in image");
+          isSuccess: false,
+          message: "No QR code found in image",
+        );
       }
     } catch (e) {
       _showStatusPopup(
-          isSuccess: false, message: "Failed to analyze image: $e");
+        isSuccess: false,
+        message: "Failed to analyze image: $e",
+      );
     }
   }
 
@@ -110,10 +115,7 @@ class _ScanQrTabState extends State<ScanQrTab> {
         );
       }
     } catch (e) {
-      _showStatusPopup(
-        isSuccess: false,
-        message: "Error processing QR: $e",
-      );
+      _showStatusPopup(isSuccess: false, message: "Error processing QR: $e");
     }
   }
 
@@ -128,13 +130,11 @@ class _ScanQrTabState extends State<ScanQrTab> {
       },
       transitionBuilder: (context, anim1, anim2, child) {
         return ScaleTransition(
-          scale: CurvedAnimation(
-            parent: anim1,
-            curve: Curves.elasticOut,
-          ),
+          scale: CurvedAnimation(parent: anim1, curve: Curves.elasticOut),
           child: AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             contentPadding: const EdgeInsets.all(20),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -159,10 +159,12 @@ class _ScanQrTabState extends State<ScanQrTab> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: isSuccess ? Colors.green : Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10))),
+                      backgroundColor: isSuccess ? Colors.green : Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                     onPressed: () {
                       Navigator.of(context).pop();
                       setState(() {
@@ -172,7 +174,7 @@ class _ScanQrTabState extends State<ScanQrTab> {
                     },
                     child: const Text("OK"),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -197,7 +199,7 @@ class _ScanQrTabState extends State<ScanQrTab> {
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
-                )
+                ),
               ],
             ),
             clipBehavior: Clip.hardEdge,
@@ -218,9 +220,7 @@ class _ScanQrTabState extends State<ScanQrTab> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     clipBehavior: Clip.hardEdge,
-                    child: _isScanning
-                        ? const _ScanningLine()
-                        : null,
+                    child: _isScanning ? const _ScanningLine() : null,
                   ),
                 ),
                 // Flash and Gallery Buttons
@@ -233,8 +233,11 @@ class _ScanQrTabState extends State<ScanQrTab> {
                     children: [
                       IconButton(
                         onPressed: () => _controller.toggleTorch(),
-                        icon: const Icon(Icons.flash_on,
-                            color: Colors.white, size: 30),
+                        icon: const Icon(
+                          Icons.flash_on,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black45,
                           padding: const EdgeInsets.all(12),
@@ -243,8 +246,11 @@ class _ScanQrTabState extends State<ScanQrTab> {
                       const SizedBox(width: 20),
                       IconButton(
                         onPressed: _pickImageFromGallery,
-                        icon: const Icon(Icons.image,
-                            color: Colors.white, size: 30),
+                        icon: const Icon(
+                          Icons.image,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black45,
                           padding: const EdgeInsets.all(12),
@@ -310,9 +316,10 @@ class _ScanningLineState extends State<_ScanningLine>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _animation = Tween<double>(begin: 0, end: 250).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 250,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.repeat(reverse: true);
   }
 
@@ -342,7 +349,7 @@ class _ScanningLineState extends State<_ScanningLine>
                       color: Colors.redAccent.withOpacity(0.5),
                       blurRadius: 10.0,
                       spreadRadius: 2.0,
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -398,9 +405,10 @@ class _AnimatedIconState extends State<_AnimatedIcon>
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: widget.isSuccess
-              ? Colors.green.withOpacity(0.1)
-              : Colors.red.withOpacity(0.1),
+          color:
+              widget.isSuccess
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.1),
         ),
         child: Icon(
           widget.isSuccess ? Icons.check_circle : Icons.error,
