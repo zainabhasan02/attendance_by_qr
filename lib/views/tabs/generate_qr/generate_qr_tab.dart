@@ -1,4 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../data/service/location_service/location_service.dart';
@@ -14,6 +21,7 @@ class _GenerateQrTabState extends State<GenerateQrTab> {
   String? _qrData;
   bool _isLoading = false;
   String? _errorMessage;
+  final GlobalKey _globalKey = GlobalKey();
 
   Future<void> _generateQRCode() async {
     setState(() {
@@ -40,6 +48,42 @@ class _GenerateQrTabState extends State<GenerateQrTab> {
     }
   }
 
+  Future<void> _saveToGallery() async {
+    if (_qrData == null) return;
+
+    try {
+      final boundary =
+          _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      final directory = await getTemporaryDirectory();
+      final File file = File('${directory.path}/attendance_qr.png');
+      await file.writeAsBytes(pngBytes);
+
+      await Gal.putImage(file.path, album: "AttendanceQR");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("QR Code saved to Gallery!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to save: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,48 +110,60 @@ class _GenerateQrTabState extends State<GenerateQrTab> {
               child: _isLoading
                   ? const CircularProgressIndicator()
                   : _qrData != null
-                  ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: _qrData!,
-                      version: QrVersions.auto,
-                      size: 240.0,
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Lat/Lng: $_qrData",
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              )
-                  : _errorMessage != null
-                  ? Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              )
-                  : Icon(
-                Icons.qr_code_2,
-                size: 150,
-                color: Colors.grey.shade300,
-              ),
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            RepaintBoundary(
+                              key: _globalKey,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: QrImageView(
+                                  data: _qrData!,
+                                  version: QrVersions.auto,
+                                  size: 240.0,
+                                  backgroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              "Lat/Lng: $_qrData",
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 20),
+                            TextButton.icon(
+                              onPressed: _saveToGallery,
+                              icon: const Icon(Icons.download),
+                              label: const Text("Save to Gallery"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.blueAccent,
+                              ),
+                            )
+                          ],
+                        )
+                      : _errorMessage != null
+                          ? Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
+                            )
+                          : Icon(
+                              Icons.qr_code_2,
+                              size: 150,
+                              color: Colors.grey.shade300,
+                            ),
             ),
           ),
 
